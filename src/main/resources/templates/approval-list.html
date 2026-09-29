@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visitor Pre-Approvals - VisitorPass</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <!-- Header Navbar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="brand">
+                <div class="brand-icon">🛡️</div>
+                <div class="brand-text">
+                    <h1>VisitorPass</h1>
+                    <span>Gated Community Pre-Approval</span>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/">📊 Dashboard</a></li>
+                <li><a href="/residents">👥 Residents</a></li>
+                <li><a href="/approvals" class="active">📋 Pre-Approvals</a></li>
+                <li><a href="/approvals/new">➕ New Pre-Approval</a></li>
+                <li><a href="/security/logs">📑 Entry Logs</a></li>
+                <li><a href="/security" class="nav-gate-btn">🚪 Gate Verification</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="main-content">
+        <div class="page-header">
+            <div class="page-title">
+                <h2>Visitor Pre-Approvals &amp; Passes</h2>
+                <p>View all resident visitor pre-approvals, OTP pass statuses, and revoke passes</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <a href="/approvals/new" class="btn btn-primary">+ New Pre-Approval</a>
+                <a href="/security" class="btn btn-secondary">🚪 Gate Terminal</a>
+            </div>
+        </div>
+
+        <!-- Success Flash Alert with Newly Generated OTP Card -->
+        <div th:if="${successMessage != null}" class="alert alert-success" style="flex-direction: column; align-items: stretch;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 20px;">🎉</span>
+                <span th:text="${successMessage}"></span>
+            </div>
+            <div th:if="${generatedOtp != null}" class="otp-highlight" style="margin-top: 14px; background: white;">
+                <p style="font-size: 13px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">
+                    Generated 6-Digit Gate OTP Pass for <span th:text="${visitorName}"></span>:
+                </p>
+                <div class="otp-code-large" th:text="${generatedOtp}"></div>
+                <div style="margin-top: 8px;">
+                    <a th:href="@{/security(otp=${generatedOtp})}" class="btn btn-sm btn-primary">
+                        👉 Test Verification at Gate Terminal
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div th:if="${errorMessage != null}" class="alert alert-danger">
+            <span>⚠️</span>
+            <div><span th:text="${errorMessage}"></span></div>
+        </div>
+
+        <!-- Table Card -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+                <h3 style="font-size: 18px; font-weight: 700;">Pre-Approval Records</h3>
+                <input type="text" id="searchInput" class="form-control" style="max-width: 280px;" placeholder="🔍 Search visitor, host, flat..." onkeyup="searchApprovals()">
+            </div>
+
+            <div class="table-responsive">
+                <table class="data-table" id="approvalTable">
+                    <thead>
+                        <tr>
+                            <th>Pass ID</th>
+                            <th>Visitor Details</th>
+                            <th>Host Resident / Flat</th>
+                            <th>Expected Time Window</th>
+                            <th>Purpose</th>
+                            <th>Status</th>
+                            <th style="text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="app : ${approvals}">
+                            <td>
+                                <span class="badge badge-approved" th:text="'#' + ${app.id}"></span>
+                            </td>
+                            <td>
+                                <strong th:text="${app.visitorName}"></strong><br>
+                                <span style="font-size: 12px; color: var(--text-muted);" th:text="${app.email}"></span><br>
+                                <span style="font-size: 12px; color: var(--text-muted);" th:text="${app.visitorPhone}"></span>
+                            </td>
+                            <td>
+                                <span th:text="${app.resident != null ? app.resident.name : 'N/A'}"></span><br>
+                                <small style="color: var(--text-muted);">Flat <strong th:text="${app.resident != null ? app.resident.flatNumber : 'N/A'}"></strong></small>
+                            </td>
+                            <td>
+                                <span style="font-weight: 600;" th:text="${#temporals.format(app.expectedVisitDateTime, 'dd MMM yyyy, hh:mm a')}"></span><br>
+                                <small style="color: var(--text-muted);" th:if="${app.validUntil != null}"
+                                       th:text="'Valid until: ' + ${#temporals.format(app.validUntil, 'hh:mm a')}"></small>
+                            </td>
+                            <td th:text="${app.purpose}"></td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${app.status == 'APPROVED' ? 'badge-approved' : 
+                                                       (app.status == 'USED' ? 'badge-used' : 
+                                                       (app.status == 'REVOKED' ? 'badge-revoked' : 'badge-expired'))}"
+                                      th:text="${app.status}"></span>
+                            </td>
+                            <td style="text-align: right;">
+                                <div th:if="${app.status == 'APPROVED' or app.status == 'PENDING'}">
+                                    <form th:action="@{/approvals/{id}/revoke(id=${app.id})}" method="post" onsubmit="return confirm('Are you sure you want to REVOKE this pre-approval? The visitor\'s OTP pass will be invalidated immediately.');">
+                                        <button type="submit" class="btn btn-sm btn-danger">Revoke Pass</button>
+                                    </form>
+                                </div>
+                                <span th:unless="${app.status == 'APPROVED' or app.status == 'PENDING'}" style="color: var(--text-muted); font-size: 12px;">
+                                    Finalized
+                                </span>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(approvals)}" class="empty-row">
+                            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                                No visitor pre-approvals found. <a href="/approvals/new">Create a new pre-approval</a>.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>VisitorPass &copy; 2026 — Gated Community Visitor Pre-Approval System | Sri Eshwar College of Engineering</p>
+    </footer>
+
+    <script>
+        function searchApprovals() {
+            const query = document.getElementById("searchInput").value.toLowerCase();
+            const rows = document.querySelectorAll("#approvalTable tbody tr:not(.empty-row)");
+            rows.forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(query) ? "" : "none";
+            });
+        }
+    </script>
+</body>
+</html>

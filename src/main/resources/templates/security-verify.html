@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Gate Verification - VisitorPass</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .result-box {
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-top: 24px;
+            text-align: left;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .result-granted {
+            background: #ecfdf5;
+            border: 2px solid #10b981;
+            color: #065f46;
+        }
+        .result-denied {
+            background: #fef2f2;
+            border: 2px solid #ef4444;
+            color: #991b1b;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed rgba(0, 0, 0, 0.1);
+            font-size: 14px;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navbar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="brand">
+                <div class="brand-icon">🛡️</div>
+                <div class="brand-text">
+                    <h1>VisitorPass</h1>
+                    <span>Gated Community Pre-Approval</span>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/">📊 Dashboard</a></li>
+                <li><a href="/residents">👥 Residents</a></li>
+                <li><a href="/approvals">📋 Pre-Approvals</a></li>
+                <li><a href="/approvals/new">➕ New Pre-Approval</a></li>
+                <li><a href="/security/logs">📑 Entry Logs</a></li>
+                <li><a href="/security" class="nav-gate-btn active">🚪 Gate Verification</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="main-content">
+        <div class="gate-card">
+            <!-- Header -->
+            <div style="margin-bottom: 24px;">
+                <div style="font-size: 48px; margin-bottom: 8px;">🛂</div>
+                <h2 style="font-size: 28px; font-weight: 800;">Security Gate Terminal</h2>
+                <p style="color: var(--text-muted); font-size: 14px;">
+                    Enter the 6-digit visitor OTP pass to validate community access
+                </p>
+            </div>
+
+            <!-- Verification Form Card -->
+            <div class="card" style="box-shadow: var(--shadow-lg);">
+                <form th:action="@{/security/verify}" method="post" id="otpForm">
+                    <label for="otpCode" style="display: block; font-weight: 700; margin-bottom: 12px; color: #334155; font-size: 15px;">
+                        Visitor 6-Digit OTP Code
+                    </label>
+                    <input type="text"
+                           id="otpCode"
+                           name="otpCode"
+                           class="otp-input-huge"
+                           placeholder="000000"
+                           maxlength="6"
+                           pattern="[0-9]{6}"
+                           th:value="${param.otp != null ? param.otp[0] : (enteredOtp != null ? enteredOtp : '')}"
+                           autocomplete="off"
+                           required
+                           autofocus>
+
+                    <div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; max-width: 320px; padding: 14px; font-size: 16px; font-weight: 700;">
+                            🔍 Validate Pass &amp; Grant Entry
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Verification Result Banner -->
+                <div th:if="${verificationResult != null}">
+                    <!-- Granted Entry Card -->
+                    <div th:if="${verificationResult.valid}" class="result-box result-granted">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                            <span style="font-size: 32px;">✅</span>
+                            <div>
+                                <h3 style="font-size: 20px; font-weight: 800; color: #047857;">ENTRY GRANTED</h3>
+                                <p style="font-size: 13px;" th:text="${verificationResult.message}"></p>
+                            </div>
+                        </div>
+
+                        <div style="background: white; border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-sm);">
+                            <div class="detail-row">
+                                <span style="color: var(--text-muted);">Visitor Name:</span>
+                                <strong style="color: #0f172a;" th:text="${verificationResult.visitorName}"></strong>
+                            </div>
+                            <div class="detail-row" th:if="${verificationResult.visitorPhone != null}">
+                                <span style="color: var(--text-muted);">Visitor Phone:</span>
+                                <strong style="color: #0f172a;" th:text="${verificationResult.visitorPhone}"></strong>
+                            </div>
+                            <div class="detail-row">
+                                <span style="color: var(--text-muted);">Host Resident:</span>
+                                <strong style="color: #0f172a;" th:text="${verificationResult.residentName}"></strong>
+                            </div>
+                            <div class="detail-row">
+                                <span style="color: var(--text-muted);">Destination Flat:</span>
+                                <strong style="color: #2563eb; font-size: 16px;" th:text="'Flat ' + ${verificationResult.flatNumber}"></strong>
+                            </div>
+                            <div class="detail-row">
+                                <span style="color: var(--text-muted);">Purpose of Visit:</span>
+                                <span style="color: #0f172a;" th:text="${verificationResult.purpose}"></span>
+                            </div>
+                            <div class="detail-row">
+                                <span style="color: var(--text-muted);">Entry Time Logged:</span>
+                                <strong style="color: #059669;" th:text="${#temporals.format(verificationResult.entryTime, 'dd MMM yyyy, hh:mm:ss a')}"></strong>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 16px; text-align: center;">
+                            <a href="/security" class="btn btn-sm btn-secondary">Next Visitor Verification &rarr;</a>
+                            <a href="/security/logs" class="btn btn-sm btn-secondary" style="margin-left: 8px;">View Gate Logs</a>
+                        </div>
+                    </div>
+
+                    <!-- Denied Entry Card -->
+                    <div th:unless="${verificationResult.valid}" class="result-box result-denied">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="font-size: 32px;">🚫</span>
+                            <div>
+                                <h3 style="font-size: 20px; font-weight: 800; color: #b91c1c;">ENTRY DENIED</h3>
+                                <p style="font-size: 14px; font-weight: 600; margin-top: 4px;" th:text="${verificationResult.message}"></p>
+                            </div>
+                        </div>
+                        <div style="margin-top: 14px; font-size: 13px; color: #7f1d1d; background: white; border-radius: var(--radius-md); padding: 12px;">
+                            Security staff notice: Do not allow unauthorized entry. Please advise the visitor to contact the host resident directly.
+                        </div>
+                        <div style="margin-top: 14px; text-align: center;">
+                            <a href="/security" class="btn btn-sm btn-secondary">Try Another OTP</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rules Summary Helper -->
+            <div style="margin-top: 24px; text-align: left; background: white; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; font-size: 13px; color: var(--text-muted);">
+                <strong style="color: #0f172a; display: block; margin-bottom: 6px;">🔒 Gate Security Protocol:</strong>
+                <ul style="padding-left: 18px; line-height: 1.6;">
+                    <li>Each OTP is strictly valid for <strong>one-time entry</strong> only.</li>
+                    <li>Expired, revoked, or already-used OTP passes are automatically rejected.</li>
+                    <li>Visits outside the resident's permitted time window are not allowed.</li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>VisitorPass &copy; 2026 — Gated Community Visitor Pre-Approval System | Sri Eshwar College of Engineering</p>
+    </footer>
+
+</body>
+</html>

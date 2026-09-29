@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisitorPass - Community Dashboard</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <!-- Header Navbar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="brand">
+                <div class="brand-icon">🛡️</div>
+                <div class="brand-text">
+                    <h1>VisitorPass</h1>
+                    <span>Gated Community Pre-Approval</span>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/" class="active">📊 Dashboard</a></li>
+                <li><a href="/residents">👥 Residents</a></li>
+                <li><a href="/approvals">📋 Pre-Approvals</a></li>
+                <li><a href="/approvals/new">➕ New Pre-Approval</a></li>
+                <li><a href="/security/logs">📑 Entry Logs</a></li>
+                <li><a href="/security" class="nav-gate-btn">🚪 Gate Verification</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="page-title">
+                <h2>Welcome to VisitorPass System</h2>
+                <p>Real-time security pre-approval, OTP pass issuance, and gate entry tracking</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <a href="/approvals/new" class="btn btn-primary">+ Pre-Approve Visitor</a>
+                <a href="/residents/new" class="btn btn-secondary">+ Register Resident</a>
+            </div>
+        </div>
+
+        <!-- Metric KPI Cards -->
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue">🏘️</div>
+                <div class="stat-info">
+                    <h3 th:text="${totalResidents}">0</h3>
+                    <p>Registered Residents</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">🎫</div>
+                <div class="stat-info">
+                    <h3 th:text="${activeApprovals}">0</h3>
+                    <p>Active Pre-Approvals</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">📋</div>
+                <div class="stat-info">
+                    <h3 th:text="${totalApprovals}">0</h3>
+                    <p>Total Passes Issued</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">🚪</div>
+                <div class="stat-info">
+                    <h3 th:text="${grantedEntries}">0</h3>
+                    <p>Verified Gate Entries</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Two Column Content Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+            <!-- Recent Pre-Approvals Card -->
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="font-size: 18px; font-weight: 700;">Recent Pre-Approvals</h3>
+                    <a href="/approvals" style="font-size: 13px; color: var(--primary); font-weight: 600; text-decoration: none;">View All &rarr;</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Visitor</th>
+                                <th>Host / Flat</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="app : ${recentApprovals}">
+                                <td>
+                                    <strong th:text="${app.visitorName}"></strong><br>
+                                    <small style="color: var(--text-muted);" th:text="${app.email}"></small>
+                                </td>
+                                <td>
+                                    <span th:text="${app.resident != null ? app.resident.name : 'N/A'}"></span><br>
+                                    <small style="color: var(--text-muted);">Flat <strong th:text="${app.resident != null ? app.resident.flatNumber : 'N/A'}"></strong></small>
+                                </td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${app.status == 'APPROVED' ? 'badge-approved' : 
+                                                           (app.status == 'USED' ? 'badge-used' : 
+                                                           (app.status == 'REVOKED' ? 'badge-revoked' : 'badge-expired'))}"
+                                          th:text="${app.status}"></span>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(recentApprovals)}">
+                                <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 20px;">No pre-approvals created yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Recent Gate Entries Card -->
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="font-size: 18px; font-weight: 700;">Recent Gate Entries</h3>
+                    <a href="/security/logs" style="font-size: 13px; color: var(--primary); font-weight: 600; text-decoration: none;">View All &rarr;</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Visitor</th>
+                                <th>Destination</th>
+                                <th>Result</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="log : ${recentLogs}">
+                                <td>
+                                    <strong th:text="${log.visitorName}"></strong><br>
+                                    <small style="color: var(--text-muted);" th:text="${#temporals.format(log.entryTime, 'dd MMM, hh:mm a')}"></small>
+                                </td>
+                                <td>
+                                    Flat <strong th:text="${log.flatNumber}"></strong><br>
+                                    <small style="color: var(--text-muted);" th:text="${log.residentName}"></small>
+                                </td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${log.status == 'GRANTED' ? 'badge-granted' : 'badge-denied'}"
+                                          th:text="${log.status}"></span>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(recentLogs)}">
+                                <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 20px;">No gate entries recorded yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Access Gate Terminal Callout -->
+        <div class="card" style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; display: flex; justify-content: space-between; align-items: center; padding: 28px; margin-top: 24px;">
+            <div>
+                <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 6px;">🚪 Security Gate Terminal</h3>
+                <p style="color: #94a3b8; font-size: 14px;">Incoming visitor at the gate? Enter their 6-digit OTP pass for instant one-time verification.</p>
+            </div>
+            <a href="/security" class="btn btn-primary" style="background: #2563eb; padding: 12px 24px; font-size: 15px;">Open Gate Verification &rarr;</a>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>VisitorPass &copy; 2026 — Gated Community Visitor Pre-Approval System | Sri Eshwar College of Engineering Project Leap</p>
+    </footer>
+
+</body>
+</html>

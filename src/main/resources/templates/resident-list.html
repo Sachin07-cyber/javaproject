@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resident Directory - VisitorPass</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <!-- Header Navbar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="brand">
+                <div class="brand-icon">🛡️</div>
+                <div class="brand-text">
+                    <h1>VisitorPass</h1>
+                    <span>Gated Community Pre-Approval</span>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/">📊 Dashboard</a></li>
+                <li><a href="/residents" class="active">👥 Residents</a></li>
+                <li><a href="/approvals">📋 Pre-Approvals</a></li>
+                <li><a href="/approvals/new">➕ New Pre-Approval</a></li>
+                <li><a href="/security/logs">📑 Entry Logs</a></li>
+                <li><a href="/security" class="nav-gate-btn">🚪 Gate Verification</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="main-content">
+        <div class="page-header">
+            <div class="page-title">
+                <h2>Resident Directory</h2>
+                <p>Manage all registered community residents and flat associations</p>
+            </div>
+            <a href="/residents/new" class="btn btn-primary">+ Register New Resident</a>
+        </div>
+
+        <!-- Flash message alerts -->
+        <div th:if="${successMessage != null}" class="alert alert-success">
+            <span>✅</span>
+            <div><span th:text="${successMessage}"></span></div>
+        </div>
+        <div th:if="${errorMessage != null}" class="alert alert-danger">
+            <span>⚠️</span>
+            <div><span th:text="${errorMessage}"></span></div>
+        </div>
+
+        <!-- Card Container -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+                <h3 style="font-size: 18px; font-weight: 700;">All Residents</h3>
+                <input type="text" id="searchInput" class="form-control" style="max-width: 280px;" placeholder="🔍 Search by name, flat, phone..." onkeyup="searchResidents()">
+            </div>
+
+            <div class="table-responsive">
+                <table class="data-table" id="residentTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Resident Name</th>
+                            <th>Flat / Unit</th>
+                            <th>Phone Number</th>
+                            <th>Email Address</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="res : ${residents}">
+                            <td><span class="badge badge-approved" th:text="'#' + ${res.id}"></span></td>
+                            <td><strong th:text="${res.name}"></strong></td>
+                            <td>
+                                <span>Flat </span><strong th:text="${res.flatNumber}"></strong>
+                                <span th:if="${res.flat != null and res.flat.block != null}" style="color: var(--text-muted); font-size: 12px;" th:text="' (' + ${res.flat.block} + ')'"></span>
+                            </td>
+                            <td th:text="${res.phoneNumber}"></td>
+                            <td th:text="${res.email != null ? res.email : 'N/A'}"></td>
+                            <td style="text-align: right;">
+                                <div style="display: inline-flex; gap: 8px;">
+                                    <a th:href="@{/approvals/new(residentId=${res.id})}" class="btn btn-sm btn-secondary" style="color: var(--primary);">+ Pass</a>
+                                    <form th:action="@{/residents/delete/{id}(id=${res.id})}" method="post" onsubmit="return confirm('Are you sure you want to delete this resident?');" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(residents)}" class="empty-row">
+                            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                                No residents registered yet. <a href="/residents/new">Register your first resident</a>.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>VisitorPass &copy; 2026 — Gated Community Visitor Pre-Approval System | Sri Eshwar College of Engineering</p>
+    </footer>
+
+    <script>
+        function searchResidents() {
+            const query = document.getElementById("searchInput").value.toLowerCase();
+            const rows = document.querySelectorAll("#residentTable tbody tr:not(.empty-row)");
+            rows.forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(query) ? "" : "none";
+            });
+        }
+    </script>
+</body>
+</html>
